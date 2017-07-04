@@ -88,7 +88,6 @@ B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis) {
                 } else if (gltfUpAxis === 'X') {
                     gltf.scene.applyMatrix(matrixChangeUpVectorZtoX);
                 }
-
                 // RTC managed
                 applyOptionalCesiumRTC(buffer.slice(28 + b3dmHeader.FTJSONLength +
                     b3dmHeader.FTBinaryLength + b3dmHeader.BTJSONLength +

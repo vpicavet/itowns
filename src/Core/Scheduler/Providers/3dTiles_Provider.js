@@ -164,7 +164,7 @@ $3dTiles_Provider.prototype.executeCommand = function executeCommand(command) {
         obj.layers.set(layer.threejsLayer);
     };
     if (path) {
-        // Check if we have relative or absolute url (with tileset's lopocs for example)
+        // For check if we have relative or absolute url (with tileset's lopocs for example)
         const url = path.startsWith('http') ? path : metadata.baseURL + path;
         const supportedFormats = {
             b3dm: this.b3dmToMesh.bind(this),
@@ -188,7 +188,11 @@ $3dTiles_Provider.prototype.executeCommand = function executeCommand(command) {
                 if (func) {
                     // TODO: request should be delayed if there is a viewerRequestVolume
                     return func(result, layer).then((content) => {
-                        tile.add(content);
+                        if (content.RTC) {
+                            tile.add(content.RTC);
+                        } else {
+                            tile.add(content);
+                        }
                         tile.traverse(setLayer);
                         return tile;
                     });

@@ -98,6 +98,5 @@ function parseFeatureBinary(array, byteOffset, FTJSONLength) {
     if (parseJSON.RTC_CENTER) {
         points.position.fromArray(parseJSON.RTC_CENTER);
     }
-
     return points;
 }
