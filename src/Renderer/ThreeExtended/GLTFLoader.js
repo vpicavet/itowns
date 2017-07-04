@@ -1661,6 +1661,10 @@ THREE.GLTFLoader = ( function () {
 									geometry.addAttribute( 'skinIndex', bufferAttribute );
 									break;
 
+								case '_BATCHID':
+									geometry.addAttribute( '_BATCHID', bufferAttribute );
+									break;
+
 							}
 
 						}

@@ -9,6 +9,7 @@ attribute float     uv_pm;
 attribute vec2      uv_wgs84;
 attribute vec3      position;
 attribute vec3      normal;
+attribute vec3      _BATCHID;
 
 uniform sampler2D   dTextures_00[1];
 uniform vec3        offsetScale_L00[1];
@@ -21,6 +22,7 @@ varying vec2        vUv_WGS84;
 varying float       vUv_PM;
 varying vec3        vNormal;
 varying vec4        pos;
+varying float       batchID_local;
 
 highp float decode32(highp vec4 rgba) {
     highp float Sign = 1.0 - step(128.0,rgba[0])*2.0;
@@ -38,6 +40,8 @@ void main() {
         vec4 vPosition;
 
         vNormal = normal;
+
+        batchID_local = _BATCHID.x;
 
         if(loadedTexturesCount[0] > 0) {
             vec2    vVv = vec2(

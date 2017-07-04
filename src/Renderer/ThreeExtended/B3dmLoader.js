@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import './GLTFLoader';
+import LayeredMaterial from '../LayeredMaterial';
 
 const matrixChangeUpVectorZtoY = (new THREE.Matrix4()).makeRotationX(Math.PI / 2);
 // For gltf rotation
@@ -92,6 +93,7 @@ B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis) {
                 applyOptionalCesiumRTC(buffer.slice(28 + b3dmHeader.FTJSONLength +
                     b3dmHeader.FTBinaryLength + b3dmHeader.BTJSONLength +
                     b3dmHeader.BTBinaryLength), gltf.scene);
+                gltf.scene.children[0].children[0].material = new LayeredMaterial();
                 resolve(gltf);
             };
             this.glTFLoader.parse(buffer.slice(28 + b3dmHeader.FTJSONLength +

@@ -5,6 +5,7 @@ import { COLOR_LAYERS_ORDER_CHANGED } from '../../Renderer/ColorLayersOrdering';
 import RendererConstant from '../../Renderer/RendererConstant';
 import GlobeControls from '../../Renderer/ThreeExtended/GlobeControls';
 import { unpack1K } from '../../Renderer/LayeredMaterial';
+import LayeredMaterial from '../../Renderer/LayeredMaterial';
 
 import { GeometryLayer } from '../Layer/Layer';
 
@@ -325,6 +326,30 @@ GlobeView.prototype.removeLayer = function removeImageryLayer(layerId) {
 
 GlobeView.prototype.selectNodeAt = function selectNodeAt(mouse) {
     const selectedId = this.screenCoordsToNodeId(mouse);
+
+    // update the picking ray with the camera and mouse position
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera.camera3D);
+    // calculate objects intersecting the picking ray
+    const intersects = raycaster.intersectObjects(this.scene.children, true);
+    for (var i = 0; i < intersects.length; i++) {
+        const interAttributes = intersects[i].object.geometry.attributes;
+        if (interAttributes) {
+            if (interAttributes._BATCHID) {
+                const A = intersects[i].face.a;
+                const BatchIDA = interAttributes._BATCHID.array[A];
+                console.log('BatchID Selectionné :', BatchIDA);
+                intersects[i].object.material = new LayeredMaterial();
+                intersects[i].object.material.uniforms.selected.value = true;
+                intersects[i].object.material.uniforms.batchID_global.value = BatchIDA;
+                console.log(intersects[i]);
+                this.notifyChange(true);
+                return;
+            }
+        }
+    }
 
     for (const n of this.wgs84TileLayer.level0Nodes) {
         n.traverse((node) => {

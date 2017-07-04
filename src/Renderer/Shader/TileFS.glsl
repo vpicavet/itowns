@@ -28,10 +28,12 @@ uniform vec3        lightPosition;
 // Options global
 uniform bool        selected;
 uniform bool        lightingEnabled;
+uniform int         batchID_global;
 
 varying vec2        vUv_WGS84;
 varying float       vUv_PM;
 varying vec3        vNormal;
+varying float       batchID_local;
 
 #if defined(DEBUG)
     uniform bool showOutline;
@@ -129,13 +131,17 @@ void main() {
 
         // No texture color
         if (!validTexture) {
-
             diffuseColor = CBlueOcean;
         }
 
         // Selected
-        if(selected) {
+        if(selected && batchID_global == -1) {
             diffuseColor = mix(COrange, diffuseColor, 0.5 );
+        }
+
+        if (batchID_global == int(floor(batchID_local + 0.5))) {
+            discard;
+            diffuseColor = mix(CRed, diffuseColor, 0.4 );
         }
 
         // Fog
