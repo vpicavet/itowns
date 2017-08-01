@@ -70,9 +70,10 @@
                 itowns.$3dTilesSubdivisionControl
             );
             $3dTilesLayerDiscreteLOD.name = 'DiscreteLOD';
-            $3dTilesLayerDiscreteLOD.url = 'https://raw.githubusercontent.com/AnalyticalGraphicsInc/3d-tiles-samples/master/tilesets/TilesetWithDiscreteLOD/tileset.json';
+            $3dTilesLayerDiscreteLOD.url = 'http://localhost:8003/tilesets/Test/tileset.json';
+            // $3dTilesLayerDiscreteLOD.url = 'https://raw.githubusercontent.com/AnalyticalGraphicsInc/3d-tiles-samples/master/tilesets/TilesetWithDiscreteLOD/tileset.json';
             $3dTilesLayerDiscreteLOD.protocol = '3d-tiles'
-            $3dTilesLayerDiscreteLOD.overrideMaterials = true;  // custom cesium shaders are not functional
+            $3dTilesLayerDiscreteLOD.overrideMaterials = false;  // custom cesium shaders are not functional
             $3dTilesLayerDiscreteLOD.type = 'geometry';
             $3dTilesLayerDiscreteLOD.visible = true;
 

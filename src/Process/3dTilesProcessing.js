@@ -67,6 +67,9 @@ export function $3dTilesCulling(node, camera) {
     if (node.boundingVolume) {
         const boundingVolume = node.boundingVolume;
         if (boundingVolume.region) {
+            if (!parentDontHaveTransform(node)) {
+                return !camera.isBox3Visible(boundingVolume.region.box3D, node.matrixWorld);
+            }
             return !camera.isBox3Visible(boundingVolume.region.box3D, boundingVolume.region.matrixWorld);
         }
         if (boundingVolume.box) {
@@ -92,10 +95,26 @@ export function pre3dTilesUpdate(context, layer) {
     return [layer.root];
 }
 
+function parentDontHaveTransform(object) {
+    if (object.position.x !== 0 || object.position.y !== 0 || object.position.z !== 0) {
+        return false;
+    }
+    while (object.parent) {
+        object = object.parent;
+        if (object.position.x !== 0 || object.position.y !== 0 || object.position.z !== 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Improved zoom geometry
 function computeNodeSSE(camera, node) {
     if (node.boundingVolume.region) {
-        const worldCoordinateCenter = node.boundingVolume.region.centerWorld;
+        let worldCoordinateCenter = node.boundingVolume.region.centerWorld;
+        if (!parentDontHaveTransform(node)) {
+            worldCoordinateCenter = node.boundingVolume.region.box3D.getCenter();
+        }
         worldCoordinateCenter.applyMatrix4(node.matrixWorld);
         const distance = camera.camera3D.position.distanceTo(worldCoordinateCenter);
         return preSSE * (node.geometricError / distance);

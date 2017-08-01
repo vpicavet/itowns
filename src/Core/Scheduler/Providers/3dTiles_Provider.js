@@ -56,14 +56,18 @@ $3dTiles_Provider.prototype.preprocessDataLayer = function preprocessDataLayer(l
     });
 };
 
-function getBox(volume) {
+function getBox(volume, parentDontHaveTransform) {
     if (volume.region) {
         const region = volume.region;
         const extent = new Extent('EPSG:4326', MathExtended.radToDeg(region[0]), MathExtended.radToDeg(region[2]), MathExtended.radToDeg(region[1]), MathExtended.radToDeg(region[3]));
         const box = OBB.extentToOBB(extent, region[4], region[5]);
-        box.position.copy(box.centerWorld);
-        box.updateMatrix();
-        box.updateMatrixWorld();
+        box.boolParentTransform = parentDontHaveTransform;
+        if (parentDontHaveTransform) {
+            box.position.copy(box.centerWorld);
+            box.box3D.max.z *= 2;
+            box.box3D.min.z = 0;
+            box.updateMatrixWorld();
+        }
         return { region: box };
     } else if (volume.box) {
         // TODO: only works for axis aligned boxes
@@ -144,18 +148,27 @@ $3dTiles_Provider.prototype.pntsParse = function pntsParse(data) {
     });
 };
 
+function parentDontHaveTransform(object) {
+    if (object.position.x !== 0 && object.position.y !== 0 && object.position.z !== 0) {
+        return false;
+    }
+    if (object.parent) {
+        parentDontHaveTransform(object.parent);
+    }
+    return true;
+}
+
 function configureTile(tile, layer, metadata) {
     tile.frustumCulled = false;
     tile.loaded = true;
     tile.layer = layer.id;
-
     // parse metadata
     tile.transform = metadata.transform ? (new THREE.Matrix4()).fromArray(metadata.transform) : new THREE.Matrix4();
     tile.applyMatrix(tile.transform);
     tile.geometricError = metadata.geometricError;
     tile.tileId = metadata.tileId;
+    tile.boundingVolume = getBox(metadata.boundingVolume, parentDontHaveTransform(tile));
     tile.additiveRefinement = (metadata.refine === 'add');
-    tile.boundingVolume = getBox(metadata.boundingVolume);
     tile.viewerRequestVolume = metadata.viewerRequestVolume ? getBox(metadata.viewerRequestVolume) : undefined;
 }
 
