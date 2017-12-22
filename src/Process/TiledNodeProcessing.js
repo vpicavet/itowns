@@ -103,6 +103,7 @@ export function processTiledGeometryNode(cullingTest, subdivisionTest) {
         if (!node.parent) {
             return ObjectRemovalHelper.removeChildrenAndCleanup(layer.id, node);
         }
+
         // early exit if parent' subdivision is in progress
         if (node.parent.pendingSubdivision) {
             node.visible = false;
@@ -139,6 +140,8 @@ export function processTiledGeometryNode(cullingTest, subdivisionTest) {
 
             // TODO: use Array.slice()
             return requestChildrenUpdate ? node.children.filter(n => n.layer == layer.id) : undefined;
+        } else {
+            node.sse = Infinity;
         }
 
         node.setDisplayed(false);
