@@ -161,7 +161,7 @@ export function patchMaterialForLogDepthSupport(material) {
 
 $3dTiles_Provider.prototype.b3dmToMesh = function b3dmToMesh(data, layer) {
     this._b3dmLoader = this._b3dmLoader || new B3dmLoader();
-    return this._b3dmLoader.parse(data, layer.asset.gltfUpAxis, this._textDecoder).then((result) => {
+    return this._b3dmLoader.parse(data, layer.asset.gltfUpAxis).then((result) => {
         const init = function f_init(mesh) {
             mesh.frustumCulled = false;
             if (mesh.material) {
@@ -193,7 +193,7 @@ $3dTiles_Provider.prototype.b3dmToMesh = function b3dmToMesh(data, layer) {
 
 $3dTiles_Provider.prototype.pntsParse = function pntsParse(data) {
     return new Promise((resolve) => {
-        resolve({ object3d: PntsLoader.parse(data, this._textDecoder).point });
+        resolve({ object3d: PntsLoader.parse(data).point });
     });
 };
 
@@ -226,8 +226,6 @@ $3dTiles_Provider.prototype.executeCommand = function executeCommand(command) {
     const tile = new THREE.Object3D();
     configureTile(tile, layer, metadata, command.requester);
     const path = metadata.content ? metadata.content.url : undefined;
-    this._textDecoder = this._textDecoder || new TextDecoder('utf-8');
-    const textDecoder = this._textDecoder;
 
     const setLayer = (obj) => {
         obj.layers.set(layer.threejsLayer);
@@ -242,9 +240,9 @@ $3dTiles_Provider.prototype.executeCommand = function executeCommand(command) {
         return Fetcher.arrayBuffer(url, layer.networkOptions).then((result) => {
             if (result !== undefined) {
                 let func;
-                const magic = textDecoder.decode(new Uint8Array(result, 0, 4));
+                const magic = THREE.LoaderUtils.decodeText(new Uint8Array(result, 0, 4));
                 if (magic[0] === '{') {
-                    result = JSON.parse(textDecoder.decode(new Uint8Array(result)));
+                    result = JSON.parse(THREE.LoaderUtils.decodeText(new Uint8Array(result)));
                     const newPrefix = url.slice(0, url.lastIndexOf('/') + 1);
                     layer.tileIndex.extendTileset(result, metadata.tileId, newPrefix);
                 } else if (magic == 'b3dm') {

@@ -33,10 +33,10 @@ function filterUnsupportedSemantics(obj) {
     }
 }
 // parse for RTC values
-function applyOptionalCesiumRTC(data, gltf, textDecoder) {
+function applyOptionalCesiumRTC(data, gltf) {
     const headerView = new DataView(data, 0, 20);
     const contentArray = new Uint8Array(data, 20, headerView.getUint32(12, true));
-    const content = textDecoder.decode(new Uint8Array(contentArray));
+    const content = THREE.LoaderUtils.decodeText(contentArray);
     const json = JSON.parse(content);
     if (json.extensions && json.extensions.CESIUM_RTC) {
         gltf.position.fromArray(json.extensions.CESIUM_RTC.center);
@@ -44,7 +44,7 @@ function applyOptionalCesiumRTC(data, gltf, textDecoder) {
     }
 }
 
-B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis, textDecoder) {
+B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis) {
     if (!buffer) {
         throw new Error('No array buffer provided.');
     }
@@ -56,7 +56,7 @@ B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis, textDecoder) {
     let batchTable = {};
 
     // Magic type is unsigned char [4]
-    b3dmHeader.magic = textDecoder.decode(new Uint8Array(buffer, 0, 4));
+    b3dmHeader.magic = THREE.LoaderUtils.decodeText(new Uint8Array(buffer, 0, 4));
     if (b3dmHeader.magic) {
         // Version, byteLength, batchTableJSONByteLength, batchTableBinaryByteLength and batchTable types are uint32
         b3dmHeader.version = view.getUint32(byteOffset, true);
@@ -79,9 +79,7 @@ B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis, textDecoder) {
 
         if (b3dmHeader.BTJSONLength > 0) {
             const sizeBegin = 28 + b3dmHeader.FTJSONLength + b3dmHeader.FTBinaryLength;
-            batchTable = BatchTable.parse(
-                buffer.slice(sizeBegin, b3dmHeader.BTJSONLength + sizeBegin),
-                textDecoder);
+            batchTable = BatchTable.parse(buffer.slice(sizeBegin, b3dmHeader.BTJSONLength + sizeBegin));
         }
         // TODO: missing feature and batch table
         return new Promise((resolve/* , reject */) => {
@@ -99,7 +97,7 @@ B3dmLoader.prototype.parse = function parse(buffer, gltfUpAxis, textDecoder) {
                 // RTC managed
                 applyOptionalCesiumRTC(buffer.slice(28 + b3dmHeader.FTJSONLength +
                     b3dmHeader.FTBinaryLength + b3dmHeader.BTJSONLength +
-                    b3dmHeader.BTBinaryLength), gltf.scene, textDecoder);
+                    b3dmHeader.BTBinaryLength), gltf.scene);
 
                 const b3dm = { gltf, batchTable };
                 resolve(b3dm);
