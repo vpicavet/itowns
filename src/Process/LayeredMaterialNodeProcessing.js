@@ -226,7 +226,7 @@ export function updateLayeredMaterialNodeImagery(context, layer, node) {
         return;
     }
 
-    const failureParams = node.layerUpdateState[layer.id].failureParams;
+    const failureParams = node.layerUpdateState[layer.id].lastFailureParams();
     const currentLevel = node.material.getColorLayerLevelById(layer.id);
     const nodeLevel = node.getCoordsForLayer(layer)[0].zoom || node.level;
     const targetLevel = chooseNextLevelToFetch(layer.updateStrategy.type, node, nodeLevel, currentLevel, layer, failureParams);

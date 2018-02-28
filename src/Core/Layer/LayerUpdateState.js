@@ -17,6 +17,29 @@ function LayerUpdateState() {
     this.state = UPDATE_STATE.IDLE;
     this.lastErrorTimestamp = 0;
     this.errorCount = 0;
+    this.failureParams = [];
+}
+function areEquivalentFailureParams(a, b) {
+    var aProps = Object.getOwnPropertyNames(a);
+    var bProps = Object.getOwnPropertyNames(b);
+
+    // If number of properties is different,
+    // failure aren't equivalent
+    if (aProps.length != bProps.length) {
+        return false;
+    }
+
+    for (var i = 0; i < aProps.length; i++) {
+        var propName = aProps[i];
+
+        // If values of same property are not equal,
+        // failure aren't equivalent
+        if (a[propName] !== b[propName]) {
+            return false;
+        }
+    }
+    // failure are equivalent
+    return true;
 }
 
 LayerUpdateState.prototype.canTryUpdate = function canTryUpdate(timestamp) {
@@ -31,7 +54,10 @@ LayerUpdateState.prototype.canTryUpdate = function canTryUpdate(timestamp) {
         }
         case UPDATE_STATE.ERROR:
         default: {
-            if (this.failureParams) {
+            const lastFailParams = this.lastFailureParams() || {};
+            const beforeLastFailParams = this.failureParams[this.failureParams.length - 2] || {};
+            // if two last Failure params aren't equivalent we can try without delay
+            if (!areEquivalentFailureParams(lastFailParams, beforeLastFailParams)) {
                 return true;
             }
             const errorDuration = this.secondsUntilNextTry() * 1000;
@@ -41,7 +67,10 @@ LayerUpdateState.prototype.canTryUpdate = function canTryUpdate(timestamp) {
 };
 
 LayerUpdateState.prototype.secondsUntilNextTry = function secondsUntilNextTry() {
-    if (this.state !== UPDATE_STATE.ERROR) {
+    const lastFailParams = this.lastFailureParams() || {};
+    const beforeLastFailParams = this.failureParams[this.failureParams.length - 2] || {};
+    // if two last failure params aren't equivalent we can try without delay
+    if (this.state !== UPDATE_STATE.ERROR || !areEquivalentFailureParams(lastFailParams, beforeLastFailParams)) {
         return 0;
     }
     const idx =
@@ -64,8 +93,12 @@ LayerUpdateState.prototype.noMoreUpdatePossible = function noMoreUpdatePossible(
     this.state = UPDATE_STATE.FINISHED;
 };
 
+LayerUpdateState.prototype.lastFailureParams = function _lastFailureParams() {
+    return this.failureParams[this.failureParams.length - 1];
+};
+
 LayerUpdateState.prototype.failure = function failure(timestamp, definitive, failureParams) {
-    this.failureParams = failureParams;
+    this.failureParams.push(failureParams);
     this.lastErrorTimestamp = timestamp;
     this.state = definitive ? UPDATE_STATE.DEFINITIVE_ERROR : UPDATE_STATE.ERROR;
     this.errorCount++;
