@@ -228,8 +228,8 @@ export function updateLayeredMaterialNodeImagery(context, layer, node) {
 
     const failureParams = node.layerUpdateState[layer.id].failureParams;
     const currentLevel = node.material.getColorLayerLevelById(layer.id);
-    const bestLevel = node.getCoordsForLayer(layer)[0].zoom || node.level;
-    const targetLevel = chooseNextLevelToFetch(layer.updateStrategy.type, node, bestLevel, currentLevel, layer, failureParams);
+    const nodeLevel = node.getCoordsForLayer(layer)[0].zoom || node.level;
+    const targetLevel = chooseNextLevelToFetch(layer.updateStrategy.type, node, nodeLevel, currentLevel, layer, failureParams);
     if (targetLevel <= currentLevel) {
         return;
     }
@@ -281,18 +281,11 @@ export function updateLayeredMaterialNodeImagery(context, layer, node) {
                     console.warn(`Imagery texture update error for ${node}: ${err}`);
                 }
 
-                // try next level if a dichotomic research makes sense
-                if (currentLevel != targetLevel - 1) {
-                    node.layerUpdateState[layer.id].failure(Date.now(), false, { targetLevel });
+                const definitiveError = node.layerUpdateState[layer.id].errorCount > MAX_RETRY;
+                node.layerUpdateState[layer.id].failure(Date.now(), definitiveError, { targetLevel });
+                window.setTimeout(() => {
                     context.view.notifyChange(false, node);
-                } else {
-                    // otherwise we have identical successive errors so failureParams will be at undefined
-                    const definitiveError = node.layerUpdateState[layer.id].errorCount > MAX_RETRY;
-                    node.layerUpdateState[layer.id].failure(Date.now(), definitiveError);
-                    window.setTimeout(() => {
-                        context.view.notifyChange(false, node);
-                    }, node.layerUpdateState[layer.id].secondsUntilNextTry() * 1000);
-                }
+                }, node.layerUpdateState[layer.id].secondsUntilNextTry() * 1000);
             }
         });
 }
