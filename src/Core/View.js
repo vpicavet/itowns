@@ -135,6 +135,7 @@ function _preprocessLayer(view, layer, provider, parentLayer) {
                 layer.threejsLayer = view.mainLoop.gfxEngine.getUniqueThreejsLayer();
             }
             layer.on = (type, listener) => view.on(type, listener, layer);
+            layer.off = (type, listener) => view.off(type, listener);
         }
         let providerPreprocessing = Promise.resolve();
         if (provider && provider.preprocessDataLayer) {
@@ -633,17 +634,17 @@ function viewerEvent(type, event, viewer) {
     return _viewerEvent;
 }
 
+const mapEvent = new Map();
+mapEvent.set('click', 'mousedown');
+mapEvent.set('mousemove', 'mousemove');
+
 View.prototype.on = function _on(type, listener, ...where) {
     if (!domListeners[type]) {
         const domElement = this.mainLoop.gfxEngine.renderer.domElement;
         domListeners[type] = (event) => {
             this.dispatchEvent(viewerEvent(type, event, this));
         };
-        if (type == 'click') {
-            domElement.addEventListener('mousedown', domListeners[type]);
-        } else if (type == 'mousemove') {
-            domElement.addEventListener('mousemove', domListeners[type]);
-        }
+        domElement.addEventListener(mapEvent.get(type), domListeners[type]);
     }
 
     const viewerListener = (event) => {
@@ -652,16 +653,20 @@ View.prototype.on = function _on(type, listener, ...where) {
     };
 
     this._viewListeners[listener] = viewerListener;
-
     this.addEventListener(type, viewerListener);
 };
 
 View.prototype.off = function _off(type, listener) {
     const viewerListener = this._viewListeners[listener];
+    const domElement = this.mainLoop.gfxEngine.renderer.domElement;
     this.removeEventListener(type, viewerListener);
     const index = this._viewListeners.indexOf(viewerListener);
     if (index !== -1) {
         this._viewListeners.splice(index, 1);
+    }
+    if (this._listeners[type].length == 0) {
+        domElement.removeEventListener(mapEvent.get(type), domListeners[type]);
+        domListeners[type] = undefined;
     }
 };
 
