@@ -1,4 +1,4 @@
-/* global window */
+/* global window, requestAnimationFrame */
 import { Scene, EventDispatcher, Vector2, Object3D } from 'three';
 import Camera from '../Renderer/Camera';
 import MainLoop from './MainLoop';
@@ -76,6 +76,7 @@ function View(crs, viewerDiv, options = {}) {
     }, false);
 
     this._changeSources = new Set();
+    this._viewListeners = [];
 
     if (__DEBUG__) {
         this.isDebugMode = true;
@@ -133,6 +134,7 @@ function _preprocessLayer(view, layer, provider, parentLayer) {
                 // because TileProvider.preprocessDataLayer function uses it.
                 layer.threejsLayer = view.mainLoop.gfxEngine.getUniqueThreejsLayer();
             }
+            layer.on = (type, listener) => view.on(type, listener, layer);
         }
         let providerPreprocessing = Promise.resolve();
         if (provider && provider.preprocessDataLayer) {
@@ -513,7 +515,7 @@ View.prototype.normalizedToViewCoords = function normalizedToViewCoords(ndcCoord
     return _eventCoords;
 };
 
-function layerIdToLayer(view, layerId) {
+export function layerIdToLayer(view, layerId) {
     const lookup = view.getLayers(l => l.id == layerId);
     if (!lookup.length) {
         throw new Error(`Invalid layer id used as where argument (value = ${layerId})`);
@@ -595,6 +597,72 @@ View.prototype.pickObjectsAt = function pickObjectsAt(mouseOrEvt, ...where) {
     }
 
     return results;
+};
+
+const domListeners = {};
+function viewerEvent(type, event, viewer) {
+    const _viewerEvent = {
+        type,
+        viewCoords: _eventCoords.set(event.offsetX, event.offsetY),
+        event,
+    };
+    let normalizedCoords;
+    let pickeds;
+    Object.defineProperty(
+        _viewerEvent,
+        'normalizedCoords',
+        {
+            get: () => {
+                if (!normalizedCoords) {
+                    _eventCoords.x = 2 * (_viewerEvent.viewCoords.x / viewer.camera.width) - 1;
+                    _eventCoords.y = -2 * (_viewerEvent.viewCoords.y / viewer.camera.height) + 1;
+                    normalizedCoords = _eventCoords;
+                }
+                return normalizedCoords;
+            },
+        });
+    Object.defineProperty(
+    _viewerEvent,
+    'pickeds',
+        {
+            get: () => {
+                pickeds = pickeds || viewer.pickObjectsAt(event, ..._viewerEvent.where);
+                return pickeds;
+            },
+        });
+    return _viewerEvent;
+}
+
+View.prototype.on = function _on(type, listener, ...where) {
+    if (!domListeners[type]) {
+        const domElement = this.mainLoop.gfxEngine.renderer.domElement;
+        domListeners[type] = (event) => {
+            this.dispatchEvent(viewerEvent(type, event, this));
+        };
+        if (type == 'click') {
+            domElement.addEventListener('mousedown', domListeners[type]);
+        } else if (type == 'mousemove') {
+            domElement.addEventListener('mousemove', domListeners[type]);
+        }
+    }
+
+    const viewerListener = (event) => {
+        event.where = where;
+        listener(event);
+    };
+
+    this._viewListeners[listener] = viewerListener;
+
+    this.addEventListener(type, viewerListener);
+};
+
+View.prototype.off = function _off(type, listener) {
+    const viewerListener = this._viewListeners[listener];
+    this.removeEventListener(type, viewerListener);
+    const index = this._viewListeners.indexOf(viewerListener);
+    if (index !== -1) {
+        this._viewListeners.splice(index, 1);
+    }
 };
 
 export default View;
