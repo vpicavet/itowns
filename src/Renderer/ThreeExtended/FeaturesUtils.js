@@ -1,4 +1,8 @@
 function pointIsOverLine(point, linePoints, epsilon) {
+    if (point.crs != linePoints[0].crs) {
+        throw new Error('crs must be the same');
+    }
+
     const x0 = point._values[0];
     const y0 = point._values[1];
     // for each segment of the line (j is i -1)
@@ -47,6 +51,10 @@ function pointIsOverLine(point, linePoints, epsilon) {
 }
 
 function getClosestPoint(point, points, epsilon) {
+    if (point.crs != points[0].crs) {
+        throw new Error('crs must be the same');
+    }
+
     const x0 = point._values[0];
     const y0 = point._values[1];
     let squaredEpsilon = epsilon * epsilon;
@@ -66,6 +74,9 @@ function getClosestPoint(point, points, epsilon) {
 }
 
 function pointIsInsidePolygon(point, polygonPoints) {
+    if (point.crs != polygonPoints[0].crs) {
+        throw new Error('crs must be the same');
+    }
     // ray-casting algorithm based on
     // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 
@@ -93,12 +104,12 @@ function pointIsInsidePolygon(point, polygonPoints) {
 }
 
 function isFeatureUnderCoordinate(coordinate, type, coordinates, epsilon) {
-    if (type == 'linestring' && pointIsOverLine(coordinate, coordinates, epsilon)) {
+    if (type == 'linestring' && pointIsOverLine(coordinate.as(coordinates[0].crs), coordinates, epsilon)) {
         return true;
-    } else if (type == 'polygon' && pointIsInsidePolygon(coordinate, coordinates)) {
+    } else if (type == 'polygon' && pointIsInsidePolygon(coordinate.as(coordinates[0].crs), coordinates)) {
         return true;
     } else if (type == 'point') {
-        const closestPoint = getClosestPoint(coordinate, coordinates, epsilon);
+        const closestPoint = getClosestPoint(coordinate.as(coordinates[0].crs), coordinates, epsilon);
         if (closestPoint) {
             return { coordinates: closestPoint };
         }
