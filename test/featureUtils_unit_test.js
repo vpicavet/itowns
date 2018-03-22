@@ -51,4 +51,10 @@ describe('FeaturesUtils', function () {
             done();
         });
     });
+    it('should remember individual feature properties', (done) => {
+        promise.then((feature) => {
+            assert.equal(feature[2].properties.my_prop, 14);
+            done();
+        });
+    });
 });
