@@ -111,8 +111,8 @@ function addExtrudedPolygonSideFaces(indices, length, ring, isClockWise) {
     }
 }
 
-function prepareBufferGeometry(vert, altitude, color) {
-    const multiplyVerticesCount = altitude instanceof Array ? altitude.length : 1;
+function prepareBufferGeometry(vert, color, altitude, extrude) {
+    const multiplyVerticesCount = extrude ? 2 : 1;
 
     const vertices = new Float32Array(3 * vert.length * multiplyVerticesCount);
     const colors = new Uint8Array(3 * vert.length * multiplyVerticesCount);
@@ -121,10 +121,11 @@ function prepareBufferGeometry(vert, altitude, color) {
         coordinatesToVertices(vert, altitude, vertices);
         fillColorArray(colors, vert.length, color.r * 255, color.g * 255, color.b * 255, 0);
     } else {
-        for (let i = 0; i < altitude.length; i++) {
-            coordinatesToVertices(vert, altitude[i], vertices, 3 * vert.length * i);
-            fillColorArray(colors, vert.length, color[i].r * 255, color[i].g * 255, color[i].b * 255, vert.length * i);
-        }
+        coordinatesToVertices(vert, altitude, vertices, 0);
+        fillColorArray(colors, vert.length, color[0].r * 255, color[0].g * 255, color[0].b * 255, 0);
+
+        coordinatesToVertices(vert, extrude, vertices, 3 * vert.length);
+        fillColorArray(colors, vert.length, color[1].r * 255, color[1].g * 255, color[1].b * 255, vert.length);
     }
 
     const geom = new THREE.BufferGeometry();
@@ -143,8 +144,8 @@ function geometryToPoint(geometry, properties, options, multiGeomAttributes) {
 
     const geom = prepareBufferGeometry(
         vertices,
-        altitude,
-        color);
+        color,
+        altitude);
 
     return new THREE.Points(geom);
 }
@@ -158,8 +159,8 @@ function geometryToLine(geometry, properties, options, multiGeomAttributes) {
 
     const geom = prepareBufferGeometry(
         vertices,
-        altitude,
-        color);
+        color,
+        altitude);
 
     if (!multiGeomAttributes) {
         return new THREE.Line(geom);
@@ -167,7 +168,7 @@ function geometryToLine(geometry, properties, options, multiGeomAttributes) {
         const indices = [];
         // Multi line case
         for (let i = 0; i < geometry.length; i++) {
-            const start = multiGeomAttributes[i].offset + geometry[i].contour.offset;
+            const start = multiGeomAttributes[i].offset;
             const end = multiGeomAttributes[i].offset + multiGeomAttributes[i].count;
             for (let j = start; j < end; j++) {
                 indices.push(j);
@@ -188,8 +189,8 @@ function geometryToPolygon(geometry, properties, options, multiGeomAttributes) {
 
     const geom = prepareBufferGeometry(
         vertices,
-        altitude,
-        color);
+        color,
+        altitude);
 
     const indices = [];
     // Build indices
@@ -203,11 +204,11 @@ function geometryToPolygon(geometry, properties, options, multiGeomAttributes) {
     } else {
         // Multi polygon case
         for (let i = 0; i < geometry.length; i++) {
-            const holes = geometry[i].holes.map(h => h.offset);
+            const holesOffsets = geometry[i].holes.map(h => h.offset);
             const start = multiGeomAttributes[i].offset + geometry[i].contour.offset;
             const end = multiGeomAttributes[i].offset + multiGeomAttributes[i].count;
             const triangles = Earcut(geom.attributes.position.array.slice(start * 3, end * 3),
-                holes,
+                holesOffsets,
                 3);
             for (const indice of triangles) {
                 indices.push(start + indice);
@@ -224,10 +225,9 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
     const vertices = multiGeomAttributes ? multiGeomAttributes.vertices : geometry.vertices;
 
     // get altitude / color from properties
-    const altitudes = [
-        getAltitude(options, properties, vertices),
-        getExtrude(options, properties),
-    ];
+    const altitude = getAltitude(options, properties, vertices);
+    const extrude = getExtrude(options, properties);
+
     const colors = [
         getColor(options, properties)];
     colors.push(colors[0].clone());
@@ -235,8 +235,9 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
 
     const geom = prepareBufferGeometry(
         vertices,
-        altitudes,
-        colors);
+        colors,
+        altitude,
+        extrude);
 
     const indices = [];
     // Build indices
@@ -314,16 +315,16 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
     return new THREE.Mesh(geom);
 }
 
-/*
- * Convert all feature coordinates in one mesh.
+/**
+ * Convert a [Feature]{@link Feature#geometry}'s geometry to a Mesh
  *
- * Read the altitude of each feature in the properties of the feature, using the function given in the param style : style.altitude(properties).
- * For polygon, read extrude amout using the function given in the param style.extrude(properties).
- *
- * param  {structure with coordinate[] and featureVertices[]} coordinates - representation of all the features
- * param  {properties[]} properties - properties of all the features
- * param  {callbacks} callbacks defines functions to read altitude and extrude amout from feature properties
- * return {THREE.Mesh} mesh
+ * @param {Object} geometry - a Feature's geometry
+ * @param {properties[]} properties - Feature's properties
+ * @param {Object} options - options controlling the conversion
+ * @param {number|function} options.altitude - define the base altitude of the mesh
+ * @param {number|function} options.extrude - if defined, polygons will be extruded by the specified amount
+ * @param {object|function} options.color - define per feature color
+ * @return {THREE.Mesh} mesh
  */
 function geometryToMesh(geometry, properties, options) {
     if (!geometry) {
@@ -405,13 +406,25 @@ function featureCollectionToThree(featureCollection, options) {
     return group;
 }
 
+/**
+ * @module Feature2Mesh
+ */
 export default {
-
+    /**
+     * Return a function that converts [Feature]s{@link module:GeoJSON2Features} to Meshes. Feature collection will be converted to a
+     * a THREE.Group.
+     *
+     * @param {Object} options - options controlling the conversion
+     * @param {number|function} options.altitude - define the base altitude of the mesh
+     * @param {number|function} options.extrude - if defined, polygons will be extruded by the specified amount
+     * @param {object|function} options.color - define per feature color
+     * @return {function}
+     */
     convert(options = {}) {
         return function _convert(feature) {
             if (!feature) return;
 
-            if (feature instanceof Array) {
+            if (Array.isArray(feature)) {
                 return featureCollectionToThree(feature, options);
             } else {
                 return featureToThree(feature, options);

@@ -116,7 +116,6 @@ const GeometryToCoordinates = {
             if (!l) {
                 return;
             }
-            // only test the first line
             filteringExtent = undefined;
             points.push(l);
             if (options.buildExtent) {
@@ -217,10 +216,10 @@ function readFeatureCollection(crsIn, crsOut, json, filteringExtent, options) {
         const f = readFeature(crsIn, crsOut, feature, filteringExtent, options);
         if (f) {
             if (options.buildExtent) {
-                if (!collec.extent) {
-                    collec.extent = f.geometry.extent.clone();
-                } else {
+                if (collec.extent) {
                     collec.extent.union(f.geometry.extent);
+                } else {
+                    collec.extent = f.geometry.extent.clone();
                 }
             }
             f.geometry.featureIndex = featureIndex;
@@ -228,26 +227,27 @@ function readFeatureCollection(crsIn, crsOut, json, filteringExtent, options) {
             featureIndex++;
         }
     }
-    if (collec.length) {
-        return collec;
-    }
+    return collec;
 }
 
+/**
+ * @module GeoJSON2Features
+ */
 export default {
     /**
      * @typedef FeatureGeometry
      * @type {object}
      * @property {string} type - Geometry type ('(multi)point', '(multi)linestring' or '(multi)polygon')
-     * @property {Coordinate[]} vertices - All the vertices of the geometry.
+     * @property {Coordinates[]} vertices - All the vertices of the geometry.
      * @property {?number[]} contour - If this geometry is a polygon, contour contains
      * the indices that compose the contour (outer ring)
      * @property {?Array} holes - If this geometry is a polygon, holes contains
-     * an array of indices reprensting holes in the polygon.
-     * @property {?Extent} extent - The 2D extent containing all the geometry
+     * an array of indices representing holes in the polygon.
+     * @property {?Extent} extent - The 2D extent containing all the geometries
     */
 
     /**
-     * @typedef Feature
+     * @typedef module:GeoJSON2Features.Feature
      * @type {object}
      * @property {FeatureGeometry|Array} geometry - The feature's geometry. Can
      * be a FeatureGeometry or an array of FeatureGeometry.
