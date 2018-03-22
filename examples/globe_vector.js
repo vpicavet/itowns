@@ -55,34 +55,5 @@ promises.push(globeView.addLayer({
     },
 }));
 
-// promises.push(globeView.addLayer({
-//     type: 'color',
-//     url: './communes.geojson',
-//     protocol: 'rasterizer',
-//     id: 'fariege',
-//     name: 'dfariege',
-//     transparent: true,
-//     style: {
-//         fill: 'orange',
-//         fillOpacity: 0.5,
-//         stroke: 'white',
-//     },
-// }));
-
-itowns.Fetcher.json('./communes.geojson')
-    .then(j => itowns.GeoJSON2Features.parse('EPSG:4978', j))
-    .then(f => {
-        const m = itowns.Feature2Mesh.convert({ extrude: 100 })(f);
-        globeView.scene.add(m);
-        m.traverse( (n) => {
-            if (n.material) {
-                n.material.depthTest = false;
-                n.renderOrder = 2;
-            }
-        })
-        globeView.notifyChange(true);
-
-    })
-
 exports.view = globeView;
 exports.initialPosition = positionOnGlobe;
