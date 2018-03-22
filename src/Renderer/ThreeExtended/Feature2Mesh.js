@@ -118,7 +118,7 @@ function addExtrudedPolygonSideFaces(indices, length, ring, isClockWise) {
 }
 
 function prepareBufferGeometry(vert, color, altitude, extrude) {
-    const multiplyVerticesCount = extrude ? 2 : 1;
+    const multiplyVerticesCount = (extrude != undefined) ? 2 : 1;
 
     const vertices = new Float32Array(3 * vert.length * multiplyVerticesCount);
     const colors = new Uint8Array(3 * vert.length * multiplyVerticesCount);
