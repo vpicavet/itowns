@@ -174,8 +174,8 @@ function geometryToLine(geometry, properties, options, multiGeomAttributes) {
         const indices = [];
         // Multi line case
         for (let i = 0; i < geometry.length; i++) {
-            const start = multiGeomAttributes[i].offset;
-            const end = multiGeomAttributes[i].offset + multiGeomAttributes[i].count;
+            const start = multiGeomAttributes.elements[i].offset;
+            const end = multiGeomAttributes.elements[i].offset + multiGeomAttributes.elements[i].count;
             for (let j = start; j < end; j++) {
                 indices.push(j);
                 indices.push(j + 1);
@@ -211,8 +211,8 @@ function geometryToPolygon(geometry, properties, options, multiGeomAttributes) {
         // Multi polygon case
         for (let i = 0; i < geometry.length; i++) {
             const holesOffsets = geometry[i].holes.map(h => h.offset);
-            const start = multiGeomAttributes[i].offset + geometry[i].contour.offset;
-            const end = multiGeomAttributes[i].offset + multiGeomAttributes[i].count;
+            const start = multiGeomAttributes.elements[i].offset + geometry[i].contour.offset;
+            const end = multiGeomAttributes.elements[i].offset + multiGeomAttributes.elements[i].count;
             const triangles = Earcut(geom.attributes.position.array.slice(start * 3, end * 3),
                 holesOffsets,
                 3);
@@ -278,16 +278,16 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
         // Multi polygon case
         const isClockWise = THREE.ShapeUtils.isClockWise(
             vertices.slice(
-                multiGeomAttributes[0].offset + geometry[0].contour.offset,
-                multiGeomAttributes[0].offset +
+                multiGeomAttributes.elements[0].offset + geometry[0].contour.offset,
+                multiGeomAttributes.elements[0].offset +
                 geometry[0].contour.offset +
                 geometry[0].contour.count).map(c => c.xyz()));
 
         for (let i = 0; i < geometry.length; i++) {
             const holesOffsets = geometry[i].holes.map(h => h.offset);
             // triangulate the top face
-            const start = vertices.length + multiGeomAttributes[i].offset + geometry[i].contour.offset;
-            const end = vertices.length + multiGeomAttributes[i].offset + multiGeomAttributes[i].count;
+            const start = vertices.length + multiGeomAttributes.elements[i].offset + geometry[i].contour.offset;
+            const end = vertices.length + multiGeomAttributes.elements[i].offset + multiGeomAttributes.elements[i].count;
             const triangles = Earcut(geom.attributes.position.array.slice(start * 3, end * 3),
                 holesOffsets,
                 3);
@@ -299,7 +299,7 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
                 vertices.length,
                 {
                     count: geometry[i].contour.count,
-                    offset: multiGeomAttributes[i].offset + geometry[i].contour.offset,
+                    offset: multiGeomAttributes.elements[i].offset + geometry[i].contour.offset,
                 },
                 isClockWise);
             if (holesOffsets.length > 0) {
@@ -309,7 +309,7 @@ function geometryToExtrudedPolygon(geometry, properties, options, multiGeomAttri
                         vertices.length,
                         {
                             count: geometry[i].holes[j].count,
-                            offset: multiGeomAttributes[i].offset + geometry[i].holes[j].offset,
+                            offset: multiGeomAttributes.elements[i].offset + geometry[i].holes[j].offset,
                         },
                         isClockWise);
                 }
@@ -342,11 +342,13 @@ function geometryToMesh(geometry, properties, options) {
     if (geometry.type.indexOf('multi') == 0) {
         // vertices count
         let vertices = [];
-        multiGeometries = [];
+        multiGeometries = {
+            elements: [],
+        };
         let offset = 0;
         for (let i = 0; i < geometry.length; i++) {
             vertices = vertices.concat(geometry[i].vertices);
-            multiGeometries.push({
+            multiGeometries.elements.push({
                 offset,
                 count: geometry[i].vertices.length,
             });
