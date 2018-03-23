@@ -4,7 +4,7 @@ import Coordinates from '../src/Core/Geographic/Coordinates';
 /* global describe, it */
 
 const assert = require('assert');
-const geojson = require('../examples/geojson/simple.geojson.json');
+const geojson = require('./data/geojson/simple.geojson.json');
 
 const promise = GeoJSON2Features.parse('EPSG:4326', geojson, undefined, { buildExtent: true });
 
