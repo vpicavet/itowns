@@ -1,7 +1,7 @@
 /* global itowns, document, renderer, orientedImageGUI  */
 // # Simple Globe viewer
 
-var micmac = true;
+var micmac = false;
 var montBlanc = true;
 
 // Define initial camera position
@@ -166,7 +166,7 @@ function orientedImagesInit(orientedImages) {
     
     if (micmac) {
         layer.images = 'http://localhost:8080/examples/Li3ds/images_091117/{imageId}_{sensorId}{dist}.jpg';
-        listOrientation = itowns.OrientedImageHelper.decode(orientedImages, itowns.oiMicMac);
+        listOrientation = itowns.OrientedImageDecoder.decode(orientedImages, itowns.oiMicMac);
     }else {
         if (montBlanc) {
             layer.images = 'http://localhost:8080/examples/Li3ds/MontBlanc.jpg';
@@ -175,7 +175,7 @@ function orientedImagesInit(orientedImages) {
         }
         
 
-        listOrientation = itowns.OrientedImageHelper.decode(orientedImages, itowns.oiMontBlanc);
+        listOrientation = itowns.OrientedImageDecoder.decode(orientedImages, itowns.oiMontBlanc);
     }
 
     for (i = 0; i < listOrientation.length; i++) {
