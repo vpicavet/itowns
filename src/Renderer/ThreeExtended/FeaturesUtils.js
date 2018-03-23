@@ -1,3 +1,5 @@
+import { convertValueToUnit, crsToUnit } from '../../Core/Geographic/Coordinates';
+
 function pointIsOverLine(point, linePoints, epsilon) {
     if (point.crs != linePoints[0].crs) {
         throw new Error('crs must be the same');
@@ -104,6 +106,7 @@ function pointIsInsidePolygon(point, polygonPoints) {
 }
 
 function isFeatureUnderCoordinate(coordinate, type, coordinates, epsilon) {
+    epsilon = convertValueToUnit(crsToUnit(coordinate.crs), crsToUnit(coordinates[0].crs), epsilon);
     if (type == 'linestring' && pointIsOverLine(coordinate.as(coordinates[0].crs), coordinates, epsilon)) {
         return true;
     } else if (type == 'polygon' && pointIsInsidePolygon(coordinate.as(coordinates[0].crs), coordinates)) {
